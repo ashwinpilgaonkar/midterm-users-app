@@ -18,6 +18,9 @@ class _SignUpPage extends State<SignUpPage> {
 
     final firstNameController = TextEditingController();
     final lastNameController = TextEditingController();
+    final ageController = TextEditingController();
+    final hometownController = TextEditingController();
+    final bioController = TextEditingController();
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final retypePasswordController = TextEditingController();
@@ -28,7 +31,7 @@ class _SignUpPage extends State<SignUpPage> {
       ),
       body: Center(
         child: Container(
-          height: 580,
+          height: 640,
           width: 370,
           child: SingleChildScrollView(
             child: Card(
@@ -62,6 +65,45 @@ class _SignUpPage extends State<SignUpPage> {
                         border: OutlineInputBorder(),
                         // errorText: 'Error',
                         labelText: 'Last name',
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 25, vertical: 16),
+                    child: TextFormField(
+                      keyboardType: TextInputType.number,
+                      controller: ageController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        // errorText: 'Error',
+                        labelText: 'Age',
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 25, vertical: 16),
+                    child: TextFormField(
+                      controller: hometownController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        // errorText: 'Error',
+                        labelText: 'Hometown',
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 25, vertical: 16),
+                    child: TextFormField(
+                      keyboardType: TextInputType.multiline,
+                      maxLines: null,
+                      controller: bioController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        // errorText: 'Error',
+                        labelText: 'Bio',
                       ),
                     ),
                   ),
@@ -119,6 +161,18 @@ class _SignUpPage extends State<SignUpPage> {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text("Please enter your last name"),
                           ));
+                        } else if (ageController.text == "") {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please enter your age"),
+                          ));
+                        } else if (hometownController.text == "") {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please enter your hometown"),
+                          ));
+                        } else if (bioController.text == "") {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please enter your bio"),
+                          ));
                         } else if (emailController.text == "") {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text("Please enter a valid email address"),
@@ -142,7 +196,9 @@ class _SignUpPage extends State<SignUpPage> {
                             users.add({
                               'first_name': firstNameController.text,
                               'last_name': lastNameController.text,
-                              'user_role': 'customer',
+                              'age': ageController.text,
+                              'hometown': hometownController.text,
+                              'bio': bioController.text,
                               'tis': DateTime.now().millisecondsSinceEpoch,
                               'email': emailController.text
                             });

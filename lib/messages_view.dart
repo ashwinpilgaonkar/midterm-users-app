@@ -47,97 +47,44 @@ class _MessagesView extends State<MessagesView> {
     }
 
     return Scaffold(
-        appBar: AppBar(title: Text("Messages"), actions: <Widget>[
-          Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: GestureDetector(
-                onTap: () {
-                  showLogoutDialog(context);
-                },
-                child: Icon(
-                  Icons.logout,
-                  size: 25,
-                ),
-              )),
-        ]),
-        body: Center(
-          child: ListView.builder(
-            itemCount: messages != null ? messages.length : 0,
-            itemBuilder: (context, index) {
-              return Card(
-                  child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      child: ListTile(
-                          leading: Icon(Icons.person, size: 60),
-                          title: Text(messages[index]['full_name']),
-                          subtitle: Text("\n" +
-                              messages[index]['message'] +
-                              "\n\n" +
-                              DateFormat('d MMM y')
-                                  .format(
-                                      new DateTime.fromMillisecondsSinceEpoch(
-                                          messages[index]['tis']))
-                                  .toString() +
-                              " -- " +
-                              DateFormat('jm')
-                                  .format(
-                                      new DateTime.fromMillisecondsSinceEpoch(
-                                          messages[index]['tis']))
-                                  .toString()))));
-            },
-          ),
+      appBar: AppBar(title: Text("Messages"), actions: <Widget>[
+        Padding(
+            padding: EdgeInsets.only(right: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                showLogoutDialog(context);
+              },
+              child: Icon(
+                Icons.logout,
+                size: 25,
+              ),
+            )),
+      ]),
+      body: Center(
+        child: ListView.builder(
+          itemCount: messages != null ? messages.length : 0,
+          itemBuilder: (context, index) {
+            return Card(
+                child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    child: ListTile(
+                        leading: Icon(Icons.person, size: 60),
+                        title: Text(messages[index]['full_name']),
+                        subtitle: Text("\n" +
+                            messages[index]['message'] +
+                            "\n\n" +
+                            DateFormat('d MMM y')
+                                .format(new DateTime.fromMillisecondsSinceEpoch(
+                                    messages[index]['tis']))
+                                .toString() +
+                            " -- " +
+                            DateFormat('jm')
+                                .format(new DateTime.fromMillisecondsSinceEpoch(
+                                    messages[index]['tis']))
+                                .toString()))));
+          },
         ),
-        floatingActionButton:
-            userData != null && userData[0].data()['user_role'] == 'admin'
-                ? FloatingActionButton(
-                    onPressed: () {
-                      showPostMessageDialog(context);
-                    },
-                    child: const Icon(Icons.add),
-                    backgroundColor: Colors.blueAccent,
-                  )
-                : null);
-  }
-
-  void showPostMessageDialog(BuildContext context) {
-    final messageController = TextEditingController();
-    CollectionReference messsages = firestore.collection('messages');
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: new Text("New Message"),
-          content: TextField(
-            controller: messageController,
-            keyboardType: TextInputType.multiline,
-            maxLines: null,
-          ),
-          actions: <Widget>[
-            new TextButton(
-              child: new Text("POST MESSAGE"),
-              onPressed: () {
-                messsages.add({
-                  'message': messageController.text,
-                  'email': email,
-                  'full_name': userData[0].data()['first_name'] +
-                      " " +
-                      userData[0].data()['last_name'],
-                  'tis': DateTime.now().millisecondsSinceEpoch,
-                });
-                fetchMessages();
-                Navigator.of(context).pop();
-              },
-            ),
-            // usually buttons at the bottom of the dialog
-            new TextButton(
-              child: new Text("CLOSE"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+      ),
     );
   }
 

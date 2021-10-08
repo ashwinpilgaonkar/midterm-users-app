@@ -3,8 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
 import 'messages_view.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
+import 'fire_auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -13,6 +13,16 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPage extends State<LoginPage> {
+  String email = "";
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print("HERE==================");
+    if (state == AppLifecycleState.resumed) {
+      FireAuth.passwordlessSigninValidate(email: email);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     FirebaseAuth auth = FirebaseAuth.instance;
@@ -30,16 +40,9 @@ class _LoginPage extends State<LoginPage> {
       child: Center(
         child: SingleChildScrollView(
             child: new Column(children: [
-          Text(
-            'Ashwin\'s Fanpage',
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 15),
           Container(
-            height: 420,
+            height: 650,
             width: 370,
             child: Card(
               elevation: 5,
@@ -50,10 +53,10 @@ class _LoginPage extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  const SizedBox(height: 10),
+                  // const SizedBox(height: 60),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 25, vertical: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 25, vertical: 0),
                     child: TextFormField(
                       controller: userNameController,
                       decoration: const InputDecoration(
@@ -78,7 +81,7 @@ class _LoginPage extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
-                    height: 55,
+                    height: 50,
                     width: 320,
                     child: SignInButtonBuilder(
                       text: 'Sign in with Email',
@@ -95,17 +98,99 @@ class _LoginPage extends State<LoginPage> {
                           ));
                         } else {
                           try {
-                            UserCredential userCredential =
-                                await auth.signInWithEmailAndPassword(
-                                    email: userNameController.text,
-                                    password: passwordController.text);
+                            await FireAuth.emailPasswordSignin(
+                                email: userNameController.text,
+                                password: passwordController.text);
 
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => MessagesView(
-                                      userCredential
-                                          .user!.providerData[0].email!)),
+                                  builder: (context) => MessagesView("")),
+                            );
+
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text("Login successful"),
+                            ));
+                          } on FirebaseAuthException catch (e) {
+                            if (e.code == 'user-not-found') {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text("No user found with that email"),
+                              ));
+                            } else if (e.code == 'wrong-password') {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text("Incorrect password"),
+                              ));
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(e.toString()),
+                            ));
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 50,
+                    width: 320,
+                    child: SignInButtonBuilder(
+                      text: 'Sign in without password',
+                      icon: Icons.email,
+                      backgroundColor: Colors.blueGrey[700]!,
+                      onPressed: () async {
+                        if (userNameController.text == "") {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please enter a valid email"),
+                          ));
+                        } else {
+                          email = userNameController.text;
+
+                          try {
+                            FireAuth.passwordlessSignin(email: email);
+
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content:
+                                  Text("Verification E-mail sent successfully"),
+                            ));
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(e.toString()),
+                            ));
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  SizedBox(
+                    height: 50,
+                    width: 320,
+                    child: SignInButtonBuilder(
+                      text: 'Sign in with phone number',
+                      icon: Icons.phone,
+                      backgroundColor: Colors.blueGrey[700]!,
+                      onPressed: () async {
+                        if (userNameController.text == "") {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please enter a valid email"),
+                          ));
+                        } else if (passwordController.text == "") {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please enter a valid password"),
+                          ));
+                        } else {
+                          try {
+                            await auth.signInWithEmailAndPassword(
+                                email: userNameController.text,
+                                password: passwordController.text);
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => MessagesView("")),
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -136,45 +221,86 @@ class _LoginPage extends State<LoginPage> {
                   SizedBox(
                     height: 50,
                     width: 320,
-                    child: SignInButton(
-                      Buttons.GoogleDark,
+                    child: SignInButtonBuilder(
+                      text: 'Sign in anonymously',
+                      icon: Icons.person,
+                      backgroundColor: Colors.blueGrey[700]!,
                       onPressed: () async {
-                        final GoogleSignInAccount? googleUser =
-                            await GoogleSignIn().signIn();
+                        try {
+                          await FireAuth.anonymousSignin();
 
-                        if (googleUser != null) {
-                          try {
-                            final GoogleSignInAuthentication googleAuth =
-                                await googleUser.authentication;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => MessagesView("")),
+                          );
 
-                            final credential = GoogleAuthProvider.credential(
-                              accessToken: googleAuth.accessToken,
-                              idToken: googleAuth.idToken,
-                            );
-
-                            UserCredential result =
-                                await auth.signInWithCredential(credential);
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => MessagesView(result
-                                      .additionalUserInfo?.profile!['email'])),
-                            );
-
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text("Login successful"),
-                            ));
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(e.toString()),
-                            ));
-                          }
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Login successful"),
+                          ));
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(e.toString()),
+                          ));
                         }
                       },
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  SizedBox(height: 20),
+                  SizedBox(
+                    height: 50,
+                    width: 320,
+                    child: SignInButton(
+                      Buttons.GoogleDark,
+                      onPressed: () async {
+                        try {
+                          await FireAuth.googleSignin();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => MessagesView("")),
+                          );
+
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Login successful"),
+                          ));
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(e.toString()),
+                          ));
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 50,
+                    width: 320,
+                    child: SignInButton(
+                      Buttons.FacebookNew,
+                      onPressed: () async {
+                        try {
+                          await FireAuth.facebookSignin();
+
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MessagesView(""),
+                              ));
+
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Login successful"),
+                          ));
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(e.toString()),
+                          ));
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 25),
                   RichText(
                     text: TextSpan(
                       style: TextStyle(color: Colors.grey, fontSize: 16),
@@ -194,11 +320,11 @@ class _LoginPage extends State<LoginPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 25),
                 ],
               ),
             ),
           ),
+          const SizedBox(height: 15),
         ])),
       ),
     );
