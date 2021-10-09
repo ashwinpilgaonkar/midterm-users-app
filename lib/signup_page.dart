@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'messages_view.dart';
+import 'user_list.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -10,13 +13,15 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPage extends State<SignUpPage> {
+  File? _imageFile;
+
   @override
   Widget build(BuildContext context) {
     FirebaseAuth auth = FirebaseAuth.instance;
     FirebaseFirestore firestore = FirebaseFirestore.instance;
     CollectionReference users = firestore.collection('users');
 
-    final firstNameController = TextEditingController();
+    var firstNameController = TextEditingController();
     final lastNameController = TextEditingController();
     final ageController = TextEditingController();
     final hometownController = TextEditingController();
@@ -43,6 +48,34 @@ class _SignUpPage extends State<SignUpPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 40, vertical: 17),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20))),
+                    child: Text(
+                      'Upload profile picture',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        firstNameController = TextEditingController(
+                            text: firstNameController.text);
+                      });
+
+                      final picker = ImagePicker();
+                      final pickedFile =
+                          await picker.pickImage(source: ImageSource.camera);
+
+                      if (pickedFile != null) {
+                        setState(() {
+                          _imageFile = File(pickedFile.path);
+                        });
+                      }
+                    },
+                  ),
                   const SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -188,11 +221,13 @@ class _SignUpPage extends State<SignUpPage> {
                           ));
                         } else {
                           try {
+                            // Authenticate user
                             UserCredential userCredential =
                                 await auth.createUserWithEmailAndPassword(
                                     email: emailController.text,
                                     password: passwordController.text);
 
+                            // Add user data to db
                             users.add({
                               'first_name': firstNameController.text,
                               'last_name': lastNameController.text,
@@ -203,12 +238,23 @@ class _SignUpPage extends State<SignUpPage> {
                               'email': emailController.text
                             });
 
+                            // Upload profile picture to firebase storage
+                            try {
+                              await FirebaseStorage.instance
+                                  .ref('profile-pictures/' +
+                                      userCredential.user!.uid)
+                                  .putFile(_imageFile!);
+                            } on FirebaseException catch (e) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text(e.toString()),
+                              ));
+                            }
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => MessagesView(
-                                      userCredential
-                                          .user!.providerData[0].email!)),
+                                  builder: (context) => UserList()),
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(

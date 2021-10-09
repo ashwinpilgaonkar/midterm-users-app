@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
-import 'messages_view.dart';
+import 'user_list.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
 import 'fire_auth.dart';
 
@@ -105,7 +105,7 @@ class _LoginPage extends State<LoginPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => MessagesView("")),
+                                  builder: (context) => UserList()),
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -190,7 +190,7 @@ class _LoginPage extends State<LoginPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => MessagesView("")),
+                                  builder: (context) => UserList()),
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -231,8 +231,7 @@ class _LoginPage extends State<LoginPage> {
 
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                                builder: (context) => MessagesView("")),
+                            MaterialPageRoute(builder: (context) => UserList()),
                           );
 
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -258,8 +257,7 @@ class _LoginPage extends State<LoginPage> {
 
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                                builder: (context) => MessagesView("")),
+                            MaterialPageRoute(builder: (context) => UserList()),
                           );
 
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -286,7 +284,7 @@ class _LoginPage extends State<LoginPage> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => MessagesView(""),
+                                builder: (context) => UserList(),
                               ));
 
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(

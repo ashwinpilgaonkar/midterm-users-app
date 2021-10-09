@@ -1,53 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:midterm_users_app/user_detail.dart';
 import 'main.dart';
 import 'package:intl/intl.dart';
+import 'user_detail.dart';
 
-class MessagesView extends StatefulWidget {
-  final String email;
-  MessagesView(this.email);
+class UserList extends StatefulWidget {
+  UserList();
   @override
-  State<MessagesView> createState() => _MessagesView(email);
+  State<UserList> createState() => _UserList();
 }
 
-class _MessagesView extends State<MessagesView> {
-  final String email;
-  _MessagesView(this.email);
+class _UserList extends State<UserList> {
   final FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   var userData;
-  var messages;
-
-  fetchMessages() {
-    firestore
-        .collection("messages")
-        .orderBy("tis", descending: true)
-        .get()
-        .then((querySnapshot) {
-      setState(() => messages = querySnapshot.docs);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     if (userData == null) {
-      firestore
-          .collection("users")
-          .where('email', isEqualTo: email)
-          .get()
-          .then((querySnapshot) {
+      firestore.collection("users").get().then((querySnapshot) {
         setState(() => userData = querySnapshot.docs);
       });
     }
 
-    if (messages == null && userData != null) {
-      fetchMessages();
-    }
-
     return Scaffold(
-      appBar: AppBar(title: Text("Messages"), actions: <Widget>[
+      appBar: AppBar(title: Text("Users"), actions: <Widget>[
         Padding(
             padding: EdgeInsets.only(right: 20.0),
             child: GestureDetector(
@@ -62,26 +42,34 @@ class _MessagesView extends State<MessagesView> {
       ]),
       body: Center(
         child: ListView.builder(
-          itemCount: messages != null ? messages.length : 0,
+          itemCount: userData != null ? userData.length : 0,
           itemBuilder: (context, index) {
             return Card(
-                child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    child: ListTile(
-                        leading: Icon(Icons.person, size: 60),
-                        title: Text(messages[index]['full_name']),
-                        subtitle: Text("\n" +
-                            messages[index]['message'] +
-                            "\n\n" +
-                            DateFormat('d MMM y')
-                                .format(new DateTime.fromMillisecondsSinceEpoch(
-                                    messages[index]['tis']))
-                                .toString() +
-                            " -- " +
-                            DateFormat('jm')
-                                .format(new DateTime.fromMillisecondsSinceEpoch(
-                                    messages[index]['tis']))
-                                .toString()))));
+                child: InkWell(
+              child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: ListTile(
+                      leading: Icon(Icons.person, size: 60),
+                      title: Text(userData[index].data()['first_name'] +
+                          " " +
+                          userData[index].data()['last_name']),
+                      subtitle: Text("\n" +
+                          "Joined on:  " +
+                          DateFormat('d MMM y')
+                              .format(new DateTime.fromMillisecondsSinceEpoch(
+                                  userData[index].data()['tis']))
+                              .toString() +
+                          " -- " +
+                          DateFormat('jm')
+                              .format(new DateTime.fromMillisecondsSinceEpoch(
+                                  userData[index].data()['tis']))
+                              .toString()))),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserDetail(userData[index]),
+                  )),
+            ));
           },
         ),
       ),
