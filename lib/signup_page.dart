@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'user_list.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'fire_auth.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -26,7 +26,6 @@ class _SignUpPage extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    FirebaseAuth auth = FirebaseAuth.instance;
     FirebaseFirestore firestore = FirebaseFirestore.instance;
     CollectionReference users = firestore.collection('users');
 
@@ -221,8 +220,8 @@ class _SignUpPage extends State<SignUpPage> {
                         } else {
                           try {
                             // Authenticate user
-                            UserCredential userCredential =
-                                await auth.createUserWithEmailAndPassword(
+                            String? userId =
+                                await FireAuth.emailPasswordRegister(
                                     email: emailController.text,
                                     password: passwordController.text);
 
@@ -230,14 +229,13 @@ class _SignUpPage extends State<SignUpPage> {
                             // Upload profile picture to firebase storage
                             try {
                               await FirebaseStorage.instance
-                                  .ref('profile-pictures/' +
-                                      userCredential.user!.uid)
+                                  .ref('profile-pictures/' + userId!)
                                   .putFile(_imageFile!);
 
                               imgUrl = await FirebaseStorage.instance
                                   .ref()
                                   .child('profile-pictures/')
-                                  .child(userCredential.user!.uid)
+                                  .child(userId)
                                   .getDownloadURL();
                             } on FirebaseException catch (e) {
                               ScaffoldMessenger.of(context)
@@ -255,9 +253,12 @@ class _SignUpPage extends State<SignUpPage> {
                               'bio': bioController.text,
                               'tis': DateTime.now().millisecondsSinceEpoch,
                               'email': emailController.text,
-                              'uid': userCredential.user!.uid,
+                              'uid': userId,
                               'image-url': imgUrl
                             });
+
+                            // Send email verification link
+                            await FireAuth.verifyUserEmail();
 
                             Navigator.push(
                               context,
@@ -269,20 +270,6 @@ class _SignUpPage extends State<SignUpPage> {
                               content:
                                   Text("Registered a new user successfully"),
                             ));
-                          } on FirebaseAuthException catch (e) {
-                            if (e.code == 'weak-password') {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content:
-                                    Text("The password provided is too weak"),
-                              ));
-                            } else if (e.code == 'email-already-in-use') {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text(
-                                    "An account already exists with that email"),
-                              ));
-                            }
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(e.toString()),

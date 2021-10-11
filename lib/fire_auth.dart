@@ -6,6 +6,40 @@ import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 class FireAuth {
   static var smsVerificationId;
 
+  static Future<String?> emailPasswordRegister({
+    required String email,
+    required String password,
+  }) async {
+    FirebaseAuth auth = FirebaseAuth.instance;
+    User? user;
+    try {
+      UserCredential userCredential = await auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+
+      user = userCredential.user;
+      // await user!.updateProfile(displayName: name);
+      // await user.reload();
+    } on FirebaseAuthException catch (e) {
+      throw e;
+    } catch (e) {
+      throw e;
+    }
+    return user!.uid;
+  }
+
+  static verifyUserEmail() async {
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  static signOut() async {
+    FirebaseAuth auth = FirebaseAuth.instance;
+    await auth.signOut();
+  }
+
   static Future<User?> emailPasswordSignin({
     required String email,
     required String password,

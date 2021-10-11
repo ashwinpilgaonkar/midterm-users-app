@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:midterm_users_app/user_detail.dart';
 import 'main.dart';
 import 'package:intl/intl.dart';
 import 'user_detail.dart';
+import 'fire_auth.dart';
 
 class UserList extends StatefulWidget {
   UserList();
@@ -13,7 +13,6 @@ class UserList extends StatefulWidget {
 }
 
 class _UserList extends State<UserList> {
-  final FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   var userData;
@@ -109,7 +108,7 @@ class _UserList extends State<UserList> {
             new TextButton(
               child: new Text("YES"),
               onPressed: () async {
-                await auth.signOut();
+                await FireAuth.signOut();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => MyApp()),
