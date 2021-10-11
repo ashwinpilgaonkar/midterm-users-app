@@ -4,6 +4,8 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
 class FireAuth {
+  static var smsVerificationId;
+
   static Future<User?> emailPasswordSignin({
     required String email,
     required String password,
@@ -97,33 +99,80 @@ class FireAuth {
     }
   }
 
-  static Future<String> passwordlessSigninValidate({
+  static Future<UserCredential?> passwordlessSigninValidate({
     required String email,
   }) async {
+    var result;
+
     final PendingDynamicLinkData? data =
         await FirebaseDynamicLinks.instance.getInitialLink();
     final FirebaseAuth auth = FirebaseAuth.instance;
 
-    final Uri deepLink = data!.link;
-    print(deepLink.toString());
+    if (data != null) {
+      final Uri deepLink = data.link;
+      print(deepLink.toString());
 
-    String link = deepLink.toString();
+      String link = deepLink.toString();
 
-    if (auth.isSignInWithEmailLink(link)) {
-      try {
-        await auth.signInWithEmailLink(
-            email: email, emailLink: deepLink.toString());
-      } catch (e) {
-        print(e);
+      if (auth.isSignInWithEmailLink(link)) {
+        try {
+          result = await auth.signInWithEmailLink(
+              email: email, emailLink: deepLink.toString());
+        } catch (e) {
+          print(e);
+        }
       }
     }
 
-    return deepLink.toString();
+    return result;
   }
 
-  // static Future<void> sendOTP({
-  //   required String phone,
-  // }) async {
+  static Future<void> sendOTP({
+    required String phone,
+  }) async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    return await auth.verifyPhoneNumber(
+      phoneNumber: phone,
+      verificationCompleted: _onVerificationCompleted,
+      verificationFailed: _onVerificationFailed,
+      codeSent: _onCodeSent,
+      codeAutoRetrievalTimeout: _onCodeTimeout,
+    );
+  }
 
-  // }
+  static Future<UserCredential> verifyOTP({
+    required String otp,
+  }) async {
+    FirebaseAuth auth = FirebaseAuth.instance;
+    // Create a PhoneAuthCredential with the code
+    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: smsVerificationId, smsCode: otp);
+
+    // Sign the user in (or link) with the credential
+    var result = await auth.signInWithCredential(credential);
+    return result;
+  }
+
+  //Unused auto OTP validation callback
+  static _onVerificationCompleted(PhoneAuthCredential authCredential) async {
+    print("=========ON VERIFICATION COMPLETE===========");
+  }
+
+  //Phone verification failed callback
+  static _onVerificationFailed(FirebaseAuthException exception) {
+    print("======ON VERIFICATION FAILED===========");
+    throw exception;
+  }
+
+  //Phone OTP sent callback
+  static _onCodeSent(String verificationId, int? forceResendingToken) {
+    print("======ON CODE SENT===========");
+    smsVerificationId = verificationId;
+  }
+
+  //Timed out callback
+  static _onCodeTimeout(String timeout) {
+    print("======ON CODE TIMEOUT===========");
+    return null;
+  }
 }

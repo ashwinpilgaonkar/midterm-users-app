@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
 import 'user_list.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
+
+//Import self built custom firebase class from fire_auth.dart
 import 'fire_auth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,24 +13,44 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPage();
 }
 
-class _LoginPage extends State<LoginPage> {
+class _LoginPage extends State<LoginPage> with WidgetsBindingObserver {
   String email = "";
+  bool sentOTP = false;
+  bool passwordlessSignInResult = false;
+  final userNameController = TextEditingController();
+  final passwordController = TextEditingController();
+  final phoneNumberController = TextEditingController();
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    print("HERE==================");
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance!.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance!.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      FireAuth.passwordlessSigninValidate(email: email);
+      //For passwordless signin -- when application is resumed, check whether the link has been authenticated
+      var result = await FireAuth.passwordlessSigninValidate(email: email);
+
+      // If link has not been previously validated, setState with authentication result
+      if (result != null && passwordlessSignInResult == false) {
+        setState(() {
+          passwordlessSignInResult = true;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    FirebaseAuth auth = FirebaseAuth.instance;
-
-    final userNameController = TextEditingController();
-    final passwordController = TextEditingController();
-
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -42,7 +63,7 @@ class _LoginPage extends State<LoginPage> {
             child: new Column(children: [
           const SizedBox(height: 15),
           Container(
-            height: 650,
+            height: 715,
             width: 370,
             child: Card(
               elevation: 5,
@@ -61,7 +82,6 @@ class _LoginPage extends State<LoginPage> {
                       controller: userNameController,
                       decoration: const InputDecoration(
                         border: UnderlineInputBorder(),
-                        // errorText: 'Error',
                         labelText: 'Enter your email',
                       ),
                     ),
@@ -74,8 +94,20 @@ class _LoginPage extends State<LoginPage> {
                       obscureText: true,
                       decoration: const InputDecoration(
                         border: UnderlineInputBorder(),
-                        // errorText: 'Error',
                         labelText: 'Enter your password',
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 25, vertical: 0),
+                    child: TextFormField(
+                      keyboardType: TextInputType.number,
+                      controller: phoneNumberController,
+                      decoration: InputDecoration(
+                        border: UnderlineInputBorder(),
+                        labelText:
+                            sentOTP ? 'Enter OTP' : 'Enter your phone number',
                       ),
                     ),
                   ),
@@ -111,18 +143,6 @@ class _LoginPage extends State<LoginPage> {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text("Login successful"),
                             ));
-                          } on FirebaseAuthException catch (e) {
-                            if (e.code == 'user-not-found') {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text("No user found with that email"),
-                              ));
-                            } else if (e.code == 'wrong-password') {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text("Incorrect password"),
-                              ));
-                            }
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(e.toString()),
@@ -137,7 +157,9 @@ class _LoginPage extends State<LoginPage> {
                     height: 50,
                     width: 320,
                     child: SignInButtonBuilder(
-                      text: 'Sign in without password',
+                      text: passwordlessSignInResult
+                          ? 'Validated. Tap to Sign-in'
+                          : 'Sign in without password',
                       icon: Icons.email,
                       backgroundColor: Colors.blueGrey[700]!,
                       onPressed: () async {
@@ -146,19 +168,35 @@ class _LoginPage extends State<LoginPage> {
                             content: Text("Please enter a valid email"),
                           ));
                         } else {
-                          email = userNameController.text;
-
-                          try {
-                            FireAuth.passwordlessSignin(email: email);
+                          if (passwordlessSignInResult == true) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => UserList()),
+                            );
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content:
-                                  Text("Verification E-mail sent successfully"),
+                              content: Text("Login successful"),
                             ));
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(e.toString()),
-                            ));
+
+                            passwordlessSignInResult = false;
+                          } else {
+                            email = userNameController.text;
+
+                            try {
+                              FireAuth.passwordlessSignin(email: email);
+
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text(
+                                    "Verification E-mail sent successfully"),
+                              ));
+                            } catch (e) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text(e.toString()),
+                              ));
+                            }
                           }
                         }
                       },
@@ -169,44 +207,51 @@ class _LoginPage extends State<LoginPage> {
                     height: 50,
                     width: 320,
                     child: SignInButtonBuilder(
-                      text: 'Sign in with phone number',
+                      text:
+                          sentOTP ? 'Verify OTP' : 'Sign in with phone number',
                       icon: Icons.phone,
                       backgroundColor: Colors.blueGrey[700]!,
                       onPressed: () async {
-                        if (userNameController.text == "") {
+                        if (phoneNumberController.text == "") {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text("Please enter a valid email"),
-                          ));
-                        } else if (passwordController.text == "") {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text("Please enter a valid password"),
+                            content: sentOTP
+                                ? Text("Please enter a valid OTP")
+                                : Text("Please enter a valid phone number"),
                           ));
                         } else {
                           try {
-                            await auth.signInWithEmailAndPassword(
-                                email: userNameController.text,
-                                password: passwordController.text);
+                            if (sentOTP == false) {
+                              try {
+                                await FireAuth.sendOTP(
+                                    phone: phoneNumberController.text);
+                                sentOTP = true;
+                              } catch (e) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content: Text(e.toString()),
+                                ));
+                              }
+                            } else {
+                              try {
+                                await FireAuth.verifyOTP(
+                                    otp: phoneNumberController.text);
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => UserList()),
-                            );
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => UserList()),
+                                );
 
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text("Login successful"),
-                            ));
-                          } on FirebaseAuthException catch (e) {
-                            if (e.code == 'user-not-found') {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text("No user found with that email"),
-                              ));
-                            } else if (e.code == 'wrong-password') {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text("Incorrect password"),
-                              ));
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content: Text("Login successful"),
+                                ));
+                              } catch (e) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content: Text(e.toString()),
+                                ));
+                              }
                             }
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -318,6 +363,7 @@ class _LoginPage extends State<LoginPage> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),

@@ -15,20 +15,20 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPage extends State<SignUpPage> {
   File? _imageFile;
 
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
+  final ageController = TextEditingController();
+  final hometownController = TextEditingController();
+  final bioController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final retypePasswordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     FirebaseAuth auth = FirebaseAuth.instance;
     FirebaseFirestore firestore = FirebaseFirestore.instance;
     CollectionReference users = firestore.collection('users');
-
-    var firstNameController = TextEditingController();
-    final lastNameController = TextEditingController();
-    final ageController = TextEditingController();
-    final hometownController = TextEditingController();
-    final bioController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final retypePasswordController = TextEditingController();
 
     return Scaffold(
       appBar: AppBar(
@@ -60,11 +60,6 @@ class _SignUpPage extends State<SignUpPage> {
                       style: TextStyle(fontSize: 18),
                     ),
                     onPressed: () async {
-                      setState(() {
-                        firstNameController = TextEditingController(
-                            text: firstNameController.text);
-                      });
-
                       final picker = ImagePicker();
                       final pickedFile =
                           await picker.pickImage(source: ImageSource.camera);
@@ -186,7 +181,11 @@ class _SignUpPage extends State<SignUpPage> {
                       style: ElevatedButton.styleFrom(
                           textStyle: const TextStyle(fontSize: 14)),
                       onPressed: () async {
-                        if (firstNameController.text == "") {
+                        if (_imageFile == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please add a profile picture"),
+                          ));
+                        } else if (firstNameController.text == "") {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text("Please enter your first name"),
                           ));
@@ -227,6 +226,26 @@ class _SignUpPage extends State<SignUpPage> {
                                     email: emailController.text,
                                     password: passwordController.text);
 
+                            var imgUrl;
+                            // Upload profile picture to firebase storage
+                            try {
+                              await FirebaseStorage.instance
+                                  .ref('profile-pictures/' +
+                                      userCredential.user!.uid)
+                                  .putFile(_imageFile!);
+
+                              imgUrl = await FirebaseStorage.instance
+                                  .ref()
+                                  .child('profile-pictures/')
+                                  .child(userCredential.user!.uid)
+                                  .getDownloadURL();
+                            } on FirebaseException catch (e) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text(e.toString()),
+                              ));
+                            }
+
                             // Add user data to db
                             users.add({
                               'first_name': firstNameController.text,
@@ -235,21 +254,10 @@ class _SignUpPage extends State<SignUpPage> {
                               'hometown': hometownController.text,
                               'bio': bioController.text,
                               'tis': DateTime.now().millisecondsSinceEpoch,
-                              'email': emailController.text
+                              'email': emailController.text,
+                              'uid': userCredential.user!.uid,
+                              'image-url': imgUrl
                             });
-
-                            // Upload profile picture to firebase storage
-                            try {
-                              await FirebaseStorage.instance
-                                  .ref('profile-pictures/' +
-                                      userCredential.user!.uid)
-                                  .putFile(_imageFile!);
-                            } on FirebaseException catch (e) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text(e.toString()),
-                              ));
-                            }
 
                             Navigator.push(
                               context,

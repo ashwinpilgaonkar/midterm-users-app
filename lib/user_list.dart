@@ -44,26 +44,34 @@ class _UserList extends State<UserList> {
         child: ListView.builder(
           itemCount: userData != null ? userData.length : 0,
           itemBuilder: (context, index) {
+            var imgUrl = userData[index].data()['image-url'];
+            print(imgUrl);
+
             return Card(
                 child: InkWell(
               child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 10),
-                  child: ListTile(
-                      leading: Icon(Icons.person, size: 60),
-                      title: Text(userData[index].data()['first_name'] +
-                          " " +
-                          userData[index].data()['last_name']),
-                      subtitle: Text("\n" +
-                          "Joined on:  " +
-                          DateFormat('d MMM y')
-                              .format(new DateTime.fromMillisecondsSinceEpoch(
-                                  userData[index].data()['tis']))
-                              .toString() +
-                          " -- " +
-                          DateFormat('jm')
-                              .format(new DateTime.fromMillisecondsSinceEpoch(
-                                  userData[index].data()['tis']))
-                              .toString()))),
+                  child: SizedBox(
+                      child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage(imgUrl),
+                          ),
+                          title: Text(userData[index].data()['first_name'] +
+                              " " +
+                              userData[index].data()['last_name']),
+                          subtitle: Text("\n" +
+                              "Joined on:  " +
+                              DateFormat('d MMM y')
+                                  .format(
+                                      new DateTime.fromMillisecondsSinceEpoch(
+                                          userData[index].data()['tis']))
+                                  .toString() +
+                              " -- " +
+                              DateFormat('jm')
+                                  .format(
+                                      new DateTime.fromMillisecondsSinceEpoch(
+                                          userData[index].data()['tis']))
+                                  .toString())))),
               onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
